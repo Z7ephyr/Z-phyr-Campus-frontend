@@ -18,30 +18,38 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _studentIdController = TextEditingController();
+  // ✅ Renommé pour correspondre à l'usage de l'Email
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  String? _studentIdError;
+  String? _emailError;
   String? _passwordError;
 
   @override
   void dispose() {
-    _studentIdController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _validateAndLogin() {
     setState(() {
-      _studentIdError = null;
+      _emailError = null;
       _passwordError = null;
     });
 
     bool hasError = false;
 
-    if (_studentIdController.text.trim().isEmpty) {
+
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
       setState(() {
-        _studentIdError = AppStrings.studentIdRequired;
+        _emailError = "L'email est requis"; 
+      });
+      hasError = true;
+    } else if (!email.contains('@')) {
+      setState(() {
+        _emailError = "Veuillez entrer un email valide";
       });
       hasError = true;
     }
@@ -56,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!hasError) {
       context.read<AuthBloc>().add(
             LoginRequested(
-              studentId: _studentIdController.text.trim(),
+              email: email, 
               password: _passwordController.text,
             ),
           );
@@ -70,14 +78,12 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            // Navigate to dashboard
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => DashboardPage(),
+                builder: (_) => const DashboardPage(),
               ),
             );
           } else if (state is AuthError) {
-            // Show error snackbar
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -101,11 +107,10 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const SizedBox(height: 40),
                   
-                  // Logo and Title
+                  
                   Center(
                     child: Column(
                       children: [
-                        // Zéphyr Logo Circle
                         Container(
                           width: 100,
                           height: 100,
@@ -132,8 +137,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        
-                        // App Name
                         Text(
                           AppStrings.appName,
                           style: GoogleFonts.poppins(
@@ -143,8 +146,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        
-                        // Slogan
                         Text(
                           AppStrings.appSlogan,
                           style: GoogleFonts.poppins(
@@ -159,7 +160,6 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 50),
                   
-                  // Welcome Text
                   Text(
                     AppStrings.welcomeBack,
                     style: GoogleFonts.poppins(
@@ -179,14 +179,14 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 40),
                   
-                  // Student ID Field
+               
                   CustomTextField(
-                    controller: _studentIdController,
-                    label: AppStrings.studentId,
-                    hint: 'Ex: ETU001',
-                    prefixIcon: Icons.person_outline,
-                    keyboardType: TextInputType.text,
-                    errorText: _studentIdError,
+                    controller: _emailController,
+                    label: "Email institutionnel", 
+                    hint: 'exemple@zephyr.tn',
+                    prefixIcon: Icons.email_outlined, 
+                    keyboardType: TextInputType.emailAddress, 
+                    errorText: _emailError,
                   ),
                   
                   const SizedBox(height: 20),
@@ -216,12 +216,11 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 12),
                   
-                  // Forgot Password
+                
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: isLoading ? null : () {
-                        // TODO: Implement forgot password
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Fonctionnalité bientôt disponible'),
@@ -240,7 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 30),
                   
-                  // Login Button
+                 
                   PrimaryButton(
                     text: AppStrings.login,
                     onPressed: _validateAndLogin,
@@ -249,7 +248,6 @@ class _LoginPageState extends State<LoginPage> {
                   
                   const SizedBox(height: 40),
                   
-                  // Footer
                   Center(
                     child: Text(
                       'Version 1.0.0',

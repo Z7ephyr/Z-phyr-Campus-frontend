@@ -16,38 +16,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>(_onLogoutRequested);
   }
 
- Future<void> _onCheckAuthStatus(
-  CheckAuthStatus event,
-  Emitter<AuthState> emit,
-) async {
-  emit(const AuthLoading());
+  Future<void> _onCheckAuthStatus(
+    CheckAuthStatus event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(const AuthLoading());
 
-  final isLoggedIn = await _storageService.isLoggedIn();
+    final isLoggedIn = await _storageService.isLoggedIn();
 
-  if (isLoggedIn) {
-    final userInfo = await _storageService.getUserInfo();
+    if (isLoggedIn) {
+      final userInfo = await _storageService.getUserInfo();
 
-    if (userInfo['userId'] != null &&
-        userInfo['studentId'] != null &&
-        userInfo['userName'] != null) {
-      // Create UserModel from stored data
-      final user = UserModel(
-        id: userInfo['userId']!,
-        studentId: userInfo['studentId']!,
-        email: '', // Not stored locally
-        role: 'student',
-        fullName: userInfo['userName']!,
-      );
+      if (userInfo['userId'] != null &&
+          userInfo['studentId'] != null &&
+          userInfo['userName'] != null) {
+        
+        final user = UserModel(
+          id: userInfo['userId']!,
+          studentId: userInfo['studentId']!,
+          email: userInfo['userEmail'] ?? '', 
+          role: 'student',
+          fullName: userInfo['userName']!,
+        );
 
-      emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user));
+      } else {
+        emit(const AuthUnauthenticated());
+      }
     } else {
       emit(const AuthUnauthenticated());
     }
-  } else {
-    emit(const AuthUnauthenticated());
   }
-}
-
 
   Future<void> _onLoginRequested(
     LoginRequested event,
@@ -56,26 +55,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoading());
 
     try {
-      // Call API
+    
       final response = await _authDataSource.login(
-        studentId: event.studentId,
+        email: event.email, 
         password: event.password,
       );
 
-      // Save tokens
+      // Sauvegarde des tokens
       await _storageService.saveTokens(
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       );
 
-      // Save user info
+      
       await _storageService.saveUserInfo(
         userId: response.user.id,
         studentId: response.user.studentId,
         userName: response.user.fullName,
+        userEmail: response.user.email,
       );
 
-      // Emit authenticated state
       emit(AuthAuthenticated(response.user));
     } catch (e) {
       emit(AuthError(e.toString().replaceAll('Exception: ', '')));
@@ -92,7 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _authDataSource.logout(refreshToken);
       }
     } catch (e) {
-      // Ignore logout errors
+   
     } finally {
       await _storageService.clearAll();
       emit(const AuthUnauthenticated());

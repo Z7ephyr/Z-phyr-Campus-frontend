@@ -9,34 +9,38 @@ class AuthRemoteDataSource {
   AuthRemoteDataSource(this._apiClient);
 
   Future<AuthResponseModel> login({
-    required String studentId,
+    required String email, 
     required String password,
   }) async {
     try {
       final response = await _apiClient.dio.post(
         ApiEndpoints.login,
         data: {
-          'student_id': studentId,
+          'email': email, 
           'password': password,
         },
       );
 
-      if (response.statusCode == 200) {
+    
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
         return AuthResponseModel.fromJson(response.data);
       } else {
         throw Exception('Login failed');
       }
     } on DioException catch (e) {
+      
       if (e.response?.statusCode == 401) {
         throw Exception('Identifiants invalides');
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        throw Exception('Erreur de connexion au serveur');
+      } else if (e.response?.statusCode == 403) {
+        throw Exception('Votre compte est suspendu ou verrouillé');
+      } else if (e.type == DioExceptionType.connectionError ||
+                 e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Erreur de connexion au serveur (Vérifiez votre API)');
       } else {
-        throw Exception('Une erreur s\'est produite');
+        throw Exception(e.response?.data['message'] ?? 'Une erreur s\'est produite');
       }
     } catch (e) {
-      throw Exception('Une erreur s\'est produite');
+      throw Exception('Une erreur inattendue est survenue');
     }
   }
 
@@ -47,7 +51,7 @@ class AuthRemoteDataSource {
         data: {'refresh_token': refreshToken},
       );
     } catch (e) {
-      // Ignore logout errors
+  
     }
   }
 }
